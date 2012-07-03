@@ -93,7 +93,7 @@ func Init() {
 func (this Database) createDatabase() {
 	fmt.Println("Create database")
 	this.execQuery("CREATE TABLE user (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, authToken TEXT, authTokenValidity DATETIME);")
-	this.execQuery("create table file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, creationDate DATETIME, size INTEGER, sha TEXT, uploadState TEXT, file TEXT, owner INTEGER, description TEXT, mime TEXT, autoMime BOOL;")
+	this.execQuery("CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, creationDate DATETIME, size INTEGER, sha TEXT, uploadState TEXT, file TEXT, owner INTEGER, description TEXT, mime TEXT, autoMime BOOL);")
 
 }
 

@@ -87,7 +87,7 @@ func (this *User) generateAuthToken() {
 
 func (this *User) GetInterruptedFiles() []*File {
 
-	rows, err := db.driver.Query("SELECT * FROM file WHERE user")
+	rows, err := db.driver.Query("SELECT * FROM file WHERE owner=?", this.id)
 	if err != nil {
 		fmt.Println(err)
 		return nil
