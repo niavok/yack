@@ -1,25 +1,25 @@
 package yack
 
 import (
-   // "database/sql"
-   "time"
+	// "database/sql"
+	"time"
 )
 
-
-type File struct{
-	id int
-	name string
-	creationDate time.Time 
-	size int
-	sha string
-	uploadState string
-	file string
-	owner *User
-	isPublic bool
-    description string
-    mime string
-    autoMime bool
+type File struct {
+	id           int
+	name         string
+	creationDate time.Time
+	size         int
+	sha          string
+	uploadState  string
+	file         string
+	owner        *User
+	isPublic     bool
+	description  string
+	mime         string
+	autoMime     bool
 }
+
 /*
 func NewFile(name string) *User {
 	_, err := db.driver.Exec("insert into user ('email') values(?);", email)
@@ -27,7 +27,7 @@ func NewFile(name string) *User {
         fmt.Println(err)
         return nil
     }
-	
+
 	return model.Users.GetByEmail(email)
 }
 
@@ -37,36 +37,36 @@ func LoadUser(row *sql.Rows) *User {
 	var user User
 	var authTokenValidity string
     row.Scan(&user.id, &user.email, &user.authToken, &authTokenValidity)
-    
+
     fmt.Println("authTokenValidity=", authTokenValidity)
     user.authTokenValidity, _ = time.Parse("2006-01-02 15:04:05", authTokenValidity)
-    
+
     fmt.Println("loaded id=",user.id, " email=", user.email, " authToken=", user.authToken, " authTokenValidity=", user.authTokenValidity)
     return &user
 }
 */
 
-func (this *File) Id() int{
+func (this *File) Id() int {
 	return this.id
 }
 
-func (this *File) Name() string{
+func (this *File) Name() string {
 	return this.name
 }
 
-func (this *File) Size() int{
+func (this *File) Size() int {
 	return this.size
 }
 
-func (this *File) Sha() string{
+func (this *File) Sha() string {
 	return this.sha
 }
 
-func (this *File) CanWrite(user *User) bool{
-    if this.owner == user {
-        return true
-    }
-    return false
+func (this *File) CanWrite(user *User) bool {
+	if this.owner == user {
+		return true
+	}
+	return false
 }
 
 /*
@@ -96,7 +96,7 @@ func (this *User) generateAuthToken() {
 	for i := 0; i < len(password); i++ {
         password[i] = alphabet[rand.Int()%len(alphabet)]
     }
-    
+
     this.authToken = string(password)
     this.authTokenValidity = time.Now().Add(time.Hour * 24 * 15) // 15 days
     _, err := db.driver.Exec("UPDATE user SET authToken=?, authTokenValidity=? WHERE id=?;", this.authToken, this.authTokenValidity, this.id)
@@ -105,6 +105,5 @@ func (this *User) generateAuthToken() {
     }
     fmt.Println("this=", &this)
     fmt.Println("token generated ", this.authToken, " valid until ", this.authTokenValidity)
-    
-}*/
 
+}*/

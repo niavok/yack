@@ -1,5 +1,4 @@
 package yack
 
-type Pack struct{
-
+type Pack struct {
 }
