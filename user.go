@@ -24,6 +24,9 @@ func NewUser(email string) *User {
 		return nil
 	}
 
+	// Add root pack
+	//TODO
+
 	return model.Users.GetByEmail(email)
 }
 
@@ -47,6 +50,10 @@ func (this *User) Id() int {
 func (this *User) DisplayName() string {
 	fmt.Println("DisplayName() ", this.email)
 	return this.email
+}
+
+func (this *User) RootPack() *Pack {
+	return this.rootPack
 }
 
 func (this *User) AuthToken() string {

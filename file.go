@@ -1,8 +1,13 @@
 package yack
 
 import (
-	// "database/sql"
+	//"database/sql"
+	"fmt"
 	"time"
+)
+
+const (
+	UPLOADED = "uploaded"
 )
 
 type File struct {
@@ -68,6 +73,48 @@ func (this *File) CanWrite(user *User) bool {
 	}
 	return false
 }
+
+func (this *File) Progress() float64 {
+	if this.uploadState == UPLOADED {
+		return 1
+	}
+
+	var uploadedSize float64 = 0
+
+	for _, partList := range this.PartLists() {
+		uploadedSize += float64(partList.Size())
+	}
+
+	return uploadedSize / float64(this.size)
+
+}
+
+func (this *File) PartLists() []*PartList {
+	rows, err := db.driver.Query("SELECT * FROM partlist WHERE file=?", this.id)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		LoadPartList(rows)
+	}
+	rows.Close()
+
+	return nil
+}
+
+/*
+def get_progress(self):
+        if self.upload_state == "uploaded":
+            return 1;
+
+        uploaded = 0;
+
+        for part in self.parts.all():
+            uploaded += part.size
+
+        return float(uploaded)/self.size*/
 
 /*
 
