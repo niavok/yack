@@ -12,63 +12,10 @@ type Database struct {
 	driver *sql.DB
 }
 
-type users struct {
-}
-
-func (this users) GetByAuthToken(authToken string, id int) *User {
-	fmt.Println("users: Get authToken=", authToken, " id=", id)
-
-	rows, err := db.driver.Query("select * from user where id=? AND authToken=?", id, authToken)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		return LoadUser(rows)
-	}
-	return nil
-
-}
-
-func (this users) GetById(id int) *User {
-	fmt.Println("users: Get id=", id)
-
-	rows, err := db.driver.Query("select * from user where id=?", id)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		return LoadUser(rows)
-	}
-	return nil
-}
-
-func (this users) GetByEmail(email string) *User {
-	fmt.Println("userList: Get email=", email)
-
-	db.driver.Query("select id, email from user")
-
-	rows, err := db.driver.Query("select * from user where email=?", email)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		return LoadUser(rows)
-	}
-	return nil
-}
-
 type Model struct {
 	Users users
 	Packs packs
+	Files files
 }
 
 var model Model
@@ -85,31 +32,16 @@ func Init() {
 		fmt.Println(err)
 		return
 	}
-	//defer db.driver.Close()
+	//TODO close later defer db.driver.Close()
 
 	db.createDatabase()
-
-	rows, err := db.driver.Query("select id, email from user")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var id int
-		var name string
-		rows.Scan(&id, &name)
-		println(id, name)
-	}
-	rows.Close()
-
 }
 
 func (this Database) createDatabase() {
 	fmt.Println("Create database")
 	this.execQuery("CREATE TABLE user (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, authToken TEXT, authTokenValidity DATETIME, rootPack INTEGER);")
 
-	this.execQuery("CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, creationDate DATETIME, size INTEGER, sha TEXT, uploadState TEXT, file TEXT, owner INTEGER, description TEXT, mime TEXT, autoMime BOOL);")
+	this.execQuery("CREATE TABLE file (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, creationDate DATETIME, size INTEGER, uploadedSize INTEGER, sha TEXT, uploadState TEXT, file TEXT, owner INTEGER, description TEXT, mime TEXT, autoMime BOOL);")
 
 	this.execQuery("CREATE TABLE pack (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, creationDate DATETIME, owner INTEGER, parentPack INTEGER, isPublic BOOL);")
 

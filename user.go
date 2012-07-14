@@ -111,3 +111,63 @@ func (this *User) GetInterruptedFiles() []*File {
 	return nil
 
 }
+
+/////////////////
+// Users list
+/////////////////
+
+type users struct {
+}
+
+func (this users) GetByAuthToken(authToken string, id int) *User {
+	fmt.Println("users: Get authToken=", authToken, " id=", id)
+
+	rows, err := db.driver.Query("select * from user where id=? AND authToken=?", id, authToken)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		return LoadUser(rows)
+	}
+	return nil
+
+}
+
+func (this users) GetById(id int) *User {
+	fmt.Println("users: Get id=", id)
+
+	rows, err := db.driver.Query("select * from user where id=?", id)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		return LoadUser(rows)
+	}
+	return nil
+}
+
+func (this users) GetByEmail(email string) *User {
+	fmt.Println("userList: Get email=", email)
+
+	db.driver.Query("select id, email from user")
+
+	rows, err := db.driver.Query("select * from user where email=?", email)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		return LoadUser(rows)
+	}
+	return nil
+}
+
+

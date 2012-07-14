@@ -1,13 +1,14 @@
 package yack
 
 import (
-	//"database/sql"
+	"database/sql"
 	"fmt"
 	"time"
 )
 
 const (
 	UPLOADED = "uploaded"
+	UPLOADING = "uploading"
 )
 
 type File struct {
@@ -15,6 +16,7 @@ type File struct {
 	name         string
 	creationDate time.Time
 	size         int
+	uploadedSize int
 	sha          string
 	uploadState  string
 	file         string
@@ -25,31 +27,34 @@ type File struct {
 	autoMime     bool
 }
 
-/*
-func NewFile(name string) *User {
-	_, err := db.driver.Exec("insert into user ('email') values(?);", email)
+func NewFile(user *User, name string, sha string, size int) *File {
+	_, err := db.driver.Exec("INSERT INTO file ('owner', 'name', 'creationDate', 'sha', 'size', 'mime', 'autoMime', 'description', 'uploadState', 'file', 'uploadedSize') VALUES(?,?,?,?,?,?,?,?,?,?,?);", user.Id(), name, time.Now(), sha, size, "", true, "", UPLOADING, "", 0)
+	
+	
+	
     if err != nil {
         fmt.Println(err)
         return nil
     }
+    
+    //TODO Check already exist
 
-	return model.Users.GetByEmail(email)
+	return model.Files.GetBySha(sha)
 }
 
 
-func LoadUser(row *sql.Rows) *User {
-    fmt.Println("LoadUser()")
-	var user User
-	var authTokenValidity string
-    row.Scan(&user.id, &user.email, &user.authToken, &authTokenValidity)
+func LoadFile(row *sql.Rows) *File {
+    fmt.Println("LoadFile()")
+	var file File
 
-    fmt.Println("authTokenValidity=", authTokenValidity)
-    user.authTokenValidity, _ = time.Parse("2006-01-02 15:04:05", authTokenValidity)
+    var creationDate string
+    var ownerId int
 
-    fmt.Println("loaded id=",user.id, " email=", user.email, " authToken=", user.authToken, " authTokenValidity=", user.authTokenValidity)
-    return &user
+    row.Scan(&file.id, &file.name, &creationDate, &file.size, &file.uploadedSize , &file.sha, &file.uploadState, &file.file, &ownerId, &file.description, &file.mime, &file.autoMime)
+
+    fmt.Println("loaded id=",file.id, " name=", file.name, " size=", file.size, " uploadedSize=", file.uploadedSize, " sha=", file.sha, " uploadState=", file.uploadState, " file=", file.file, " ownerId=", ownerId, " description=", file.description, " mime=", file.mime, " autoMime=", file.autoMime)
+    return &file
 }
-*/
 
 func (this *File) Id() int {
 	return this.id
@@ -79,25 +84,19 @@ func (this *File) Progress() float64 {
 		return 1
 	}
 
-	var uploadedSize float64 = 0
-
-	for _, partList := range this.PartLists() {
-		uploadedSize += float64(partList.Size())
-	}
-
-	return uploadedSize / float64(this.size)
+	return float64(this.uploadedSize) / float64(this.size)
 
 }
 
-func (this *File) PartLists() []*PartList {
-	rows, err := db.driver.Query("SELECT * FROM partlist WHERE file=?", this.id)
+func (this *File) Parts() []*Part {
+	rows, err := db.driver.Query("SELECT * FROM part WHERE file=?", this.id)
 	if err != nil {
 		fmt.Println(err)
 		return nil
 	}
 	defer rows.Close()
 	for rows.Next() {
-		LoadPartList(rows)
+		LoadPart(rows)
 	}
 	rows.Close()
 
@@ -154,3 +153,31 @@ func (this *User) generateAuthToken() {
     fmt.Println("token generated ", this.authToken, " valid until ", this.authTokenValidity)
 
 }*/
+
+/////////////////
+// Files list
+/////////////////
+
+type files struct {
+}
+
+func (this files) GetBySha(sha string) *File {
+	fmt.Println("files: GetBySha sha=", sha)
+
+	rows, err := db.driver.Query("SELECT * FROM file WHERE sha=?", sha)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		fmt.Println("has result, load")
+		return LoadFile(rows)
+	}
+	fmt.Println("no result")
+	return nil
+
+}
+
+
