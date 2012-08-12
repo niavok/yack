@@ -12,7 +12,7 @@ const (
 )
 
 type File struct {
-	id           int
+	id           int64
 	name         string
 	creationDate time.Time
 	size         int
@@ -20,11 +20,15 @@ type File struct {
 	sha          string
 	uploadState  string
 	file         string
-	owner        *User
+    ownerId      int64
 	isPublic     bool
 	description  string
 	mime         string
 	autoMime     bool
+
+    //Cache	
+	owner        *User
+	
 }
 
 func NewFile(user *User, name string, sha string, size int) *File {
@@ -48,19 +52,18 @@ func LoadFile(row *sql.Rows) *File {
 	var file File
 
     var creationDate string
-    var ownerId int
 
-    err := row.Scan(&file.id, &file.name, &creationDate, &file.size, &file.uploadedSize , &file.sha, &file.uploadState, &file.file, &ownerId, &file.description, &file.mime, &file.autoMime)
+    err := row.Scan(&file.id, &file.name, &creationDate, &file.size, &file.uploadedSize , &file.sha, &file.uploadState, &file.file, &file.ownerId, &file.description, &file.mime, &file.autoMime)
     if err != nil {
 		fmt.Println("LoadFile Scan Error: ",err)
 		return nil
 	}
 
-    fmt.Println("loaded id=",file.id, " name=", file.name, " size=", file.size, " uploadedSize=", file.uploadedSize, " sha=", file.sha, " uploadState=", file.uploadState, " file=", file.file, " ownerId=", ownerId, " description=", file.description, " mime=", file.mime, " autoMime=", file.autoMime)
+    fmt.Println("loaded id=",file.id, " name=", file.name, " size=", file.size, " uploadedSize=", file.uploadedSize, " sha=", file.sha, " uploadState=", file.uploadState, " file=", file.file, " ownerId=", file.ownerId, " description=", file.description, " mime=", file.mime, " autoMime=", file.autoMime)
     return &file
 }
 
-func (this *File) Id() int {
+func (this *File) Id() int64 {
 	return this.id
 }
 
@@ -76,12 +79,29 @@ func (this *File) Sha() string {
 	return this.sha
 }
 
+func (this *File) Owner() *User {
+    if this.owner == nil {
+        this.owner = model.Users.GetById(this.ownerId)
+    }
+	return this.owner
+}
+
 func (this *File) CanWrite(user *User) bool {
-	if this.owner == user {
+	if model.Users.Equal(this.Owner(),user) {
 		return true
 	}
 	return false
 }
+
+func (this *File) CanRead(user *User) bool {
+    if model.Users.Equal(this.Owner(),user) {
+		return true
+	}
+
+    //TODO share
+	return false
+}
+
 
 func (this *File) Progress() float64 {
 	if this.uploadState == UPLOADED {
@@ -106,57 +126,6 @@ func (this *File) Parts() []*Part {
 
 	return nil
 }
-
-/*
-def get_progress(self):
-        if self.upload_state == "uploaded":
-            return 1;
-
-        uploaded = 0;
-
-        for part in self.parts.all():
-            uploaded += part.size
-
-        return float(uploaded)/self.size*/
-
-/*
-
-func (this *User) AuthToken() string{
-    fmt.Println("AuthToken()")
-    if this.authToken == "" || this.authTokenValidity.Before(time.Now()) {
-        if this.authToken == "" {
-            fmt.Println("generateAuthToken because empty auth token")
-        }
-        if this.authTokenValidity.Before(time.Now()) {
-            fmt.Println("generateAuthToken because ", this.authTokenValidity, " is before ", time.Now())
-        }
-
-        this.generateAuthToken()
-    }
-    fmt.Println("this=", &this)
-    fmt.Println("authToken=", this.authToken)
-	return this.authToken
-}
-
-
-func (this *User) generateAuthToken() {
-    fmt.Println("generateAuthToken to id ", this.id)
-    alphabet := "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    password := make([]byte, 32)
-	for i := 0; i < len(password); i++ {
-        password[i] = alphabet[rand.Int()%len(alphabet)]
-    }
-
-    this.authToken = string(password)
-    this.authTokenValidity = time.Now().Add(time.Hour * 24 * 15) // 15 days
-    _, err := db.driver.Exec("UPDATE user SET authToken=?, authTokenValidity=? WHERE id=?;", this.authToken, this.authTokenValidity, this.id)
-    if err != nil {
-        fmt.Println(err)
-    }
-    fmt.Println("this=", &this)
-    fmt.Println("token generated ", this.authToken, " valid until ", this.authTokenValidity)
-
-}*/
 
 /////////////////
 // Files list
@@ -183,5 +152,22 @@ func (this files) GetBySha(sha string) *File {
 	return nil
 
 }
+
+func (this files) GetById(id int64) *File {
+	fmt.Println("files: Get id=", id)
+
+	rows, err := db.driver.Query("select * from file where id=?", id)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		return LoadFile(rows)
+	}
+	return nil
+}
+
 
 

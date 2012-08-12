@@ -109,23 +109,20 @@ func (this *User) generateAuthToken() {
 }
 
 func (this *User) GetInterruptedFiles() []*File {
-
-	rows, err := db.driver.Query("SELECT * FROM file WHERE owner=?", this.id)
+	rows, err := db.driver.Query("SELECT * FROM file WHERE owner=? AND uploadState!=? ", this.id, UPLOADED)
 	if err != nil {
 		fmt.Println(err)
 		return nil
 	}
 	defer rows.Close()
+	
+	files := []*File{}
+	
 	for rows.Next() {
-		var id int
-		var name string
-		rows.Scan(&id, &name)
-		println(id, name)
+        files = append(files, LoadFile(rows))
 	}
-	rows.Close()
 
-	return nil
-
+	return files
 }
 
 /////////////////
