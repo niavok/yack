@@ -8,33 +8,46 @@ import (
 )
 
 type User struct {
-	id                int
+	id                int64
 	email             string
 	creationDate      time.Time
 	authToken         string
 	authTokenValidity time.Time
 	isAdmin           bool
+	rootPackId        int64
 	rootPack          *Pack
 }
 
 func NewUser(email string) *User {
-	_, err := db.driver.Exec("insert into user ('email') values(?);", email)
+
+	// Add root pack
+	var rootPack = NewPack("")
+
+	result, err := db.driver.Exec("insert into user ('email', 'rootPack', 'authToken', 'authTokenValidity') values(?, ?, ?, ?);", email, rootPack.Id(), "", time.Now())
 	if err != nil {
 		fmt.Println(err)
 		return nil
 	}
 
-	// Add root pack
-	//TODO
-
-	return model.Users.GetByEmail(email)
+    id, _ := result.LastInsertId()
+        fmt.Println("LastInsertId user", id)
+        
+	var user = model.Users.GetById(id)
+	
+    rootPack.SetOwner(user)
+	return user;
 }
 
 func LoadUser(row *sql.Rows) *User {
 	fmt.Println("LoadUser()")
 	var user User
 	var authTokenValidity string
-	row.Scan(&user.id, &user.email, &user.authToken, &authTokenValidity)
+	err := row.Scan(&user.id, &user.email, &user.authToken, &authTokenValidity, &user.rootPackId)
+	if err != nil {
+		fmt.Println("LoadUser Scan Error: ",err)
+		return nil
+	}
+	
 
 	fmt.Println("authTokenValidity=", authTokenValidity)
 	user.authTokenValidity, _ = time.Parse("2006-01-02 15:04:05", authTokenValidity)
@@ -43,7 +56,7 @@ func LoadUser(row *sql.Rows) *User {
 	return &user
 }
 
-func (this *User) Id() int {
+func (this *User) Id() int64 {
 	return this.id
 }
 
@@ -53,6 +66,9 @@ func (this *User) DisplayName() string {
 }
 
 func (this *User) RootPack() *Pack {
+    if this.rootPack == nil {
+        this.rootPack = model.Packs.GetById(this.rootPackId)
+    }
 	return this.rootPack
 }
 
@@ -119,7 +135,7 @@ func (this *User) GetInterruptedFiles() []*File {
 type users struct {
 }
 
-func (this users) GetByAuthToken(authToken string, id int) *User {
+func (this users) GetByAuthToken(authToken string, id int64) *User {
 	fmt.Println("users: Get authToken=", authToken, " id=", id)
 
 	rows, err := db.driver.Query("select * from user where id=? AND authToken=?", id, authToken)
@@ -136,7 +152,7 @@ func (this users) GetByAuthToken(authToken string, id int) *User {
 
 }
 
-func (this users) GetById(id int) *User {
+func (this users) GetById(id int64) *User {
 	fmt.Println("users: Get id=", id)
 
 	rows, err := db.driver.Query("select * from user where id=?", id)
@@ -151,6 +167,14 @@ func (this users) GetById(id int) *User {
 	}
 	return nil
 }
+
+func (this users) Equal(user1 *User, user2 *User) bool {
+    if user1 == nil || user2 == nil {
+        return user1 == user2
+    }     
+    return user1.Id() == user2.Id()
+}
+
 
 func (this users) GetByEmail(email string) *User {
 	fmt.Println("userList: Get email=", email)

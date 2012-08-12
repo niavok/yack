@@ -50,7 +50,11 @@ func LoadFile(row *sql.Rows) *File {
     var creationDate string
     var ownerId int
 
-    row.Scan(&file.id, &file.name, &creationDate, &file.size, &file.uploadedSize , &file.sha, &file.uploadState, &file.file, &ownerId, &file.description, &file.mime, &file.autoMime)
+    err := row.Scan(&file.id, &file.name, &creationDate, &file.size, &file.uploadedSize , &file.sha, &file.uploadState, &file.file, &ownerId, &file.description, &file.mime, &file.autoMime)
+    if err != nil {
+		fmt.Println("LoadFile Scan Error: ",err)
+		return nil
+	}
 
     fmt.Println("loaded id=",file.id, " name=", file.name, " size=", file.size, " uploadedSize=", file.uploadedSize, " sha=", file.sha, " uploadState=", file.uploadState, " file=", file.file, " ownerId=", ownerId, " description=", file.description, " mime=", file.mime, " autoMime=", file.autoMime)
     return &file

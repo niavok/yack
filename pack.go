@@ -9,27 +9,61 @@ import (
 )
 
 type Pack struct {
-	id           int
+	id           int64
 	name         string
 	creationDate time.Time
+    ownerId      int64
+	parentPackId   int64
+	isPublic     bool
+	
+	//Cache
 	owner        *User
 	parentPack   *Pack
-	isPublic     bool
 }
+
+
+func NewPack(name string) *Pack {
+    fmt.Println("NewPack()")
+	result, err := db.driver.Exec("insert into pack ('name', 'creationDate', 'isPublic', 'owner', 'parentPack') values(?, ?, ?, ?, ?);", name, time.Now(), false, -1, -1)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+    id, _ := result.LastInsertId()
+    fmt.Println("LastInsertId pack ", id)
+	var pack = model.Packs.GetById(id)
+	return pack;
+}
+
 
 func LoadPack(row *sql.Rows) *Pack {
 	fmt.Println("LoadPack()")
 	var pack Pack
-	row.Scan(&pack.id, &pack.name, &pack.creationDate, &pack.isPublic)
+	var creationDate string
+
+	err := row.Scan(&pack.id, &pack.name, &creationDate, &pack.ownerId, &pack.parentPackId, &pack.isPublic)
+	if err != nil {
+		fmt.Println("LoadPack Scan Error: ", err)
+		return nil
+	}
+	pack.creationDate, _ = time.Parse("2006-01-02 15:04:05", creationDate)
+	
 	return &pack
 }
 
-func (this *Pack) Id() int {
+func (this *Pack) Id() int64 {
 	return this.id
 }
 
+func (this *Pack) Owner() *User {
+    if this.owner == nil {
+        this.owner = model.Users.GetById(this.ownerId)
+    }
+	return this.owner
+}
+
 func (this *Pack) CanRead(user *User) bool {
-	if this.owner == user {
+	if model.Users.Equal(this.Owner(),user) {
 		return true
 	}
 
@@ -74,24 +108,26 @@ func (this Pack) IsSharedToUser(user *User) bool {
 
 }
 
+
+
+
+
 func (this *Pack) GetFiles() []*File {
 
-	rows, err := db.driver.Query("SELECT * FROM file_pack WHERE pack=?", this.id)
+	rows, err := db.driver.Query("SELECT id, name, creationDate, size, uploadedSize, sha, uploadState, file.file, owner, description, mime, autoMime FROM pack_file, file WHERE pack=?", this.id)
 	if err != nil {
 		fmt.Println(err)
 		return nil
 	}
 	defer rows.Close()
+	
+	files := []*File{}
+	
 	for rows.Next() {
-		var id int
-		var name string
-		rows.Scan(&id, &name)
-		println(id, name)
+        files = append(files, LoadFile(rows))
 	}
-	rows.Close()
 
-	return nil
-
+	return files
 }
 
 func (this Pack) IsSharedToUserGroup(group *UserGroup) bool {
@@ -128,6 +164,16 @@ func (this Pack) IsSharedToUserGroup(group *UserGroup) bool {
 
 }
 
+func (this Pack) SetOwner(user *User) {
+    _, err := db.driver.Exec("UPDATE pack SET owner=? WHERE id=?", user.Id(), this.Id())
+	if err != nil {
+		fmt.Println("Error in SetOwner: ",err)
+	}
+	
+	this.ownerId = user.Id()
+    this.owner = user
+}
+
 ///////////////////////
 // Pack list
 ///////////////////////
@@ -147,7 +193,7 @@ func (this packs) GetByPath(path string) *Pack {
 
 	var pack *Pack = nil
 
-	var id, _ = strconv.Atoi(pathSegments[0])
+	var id, _ = strconv.ParseInt(pathSegments[0], 10, 64)
 
 	var user *User = model.Users.GetById(id)
 
@@ -157,9 +203,10 @@ func (this packs) GetByPath(path string) *Pack {
 	}
 
 	pack = user.RootPack()
+	fmt.Println("packs: GetByPath RootPack: ", pack)
 
 	for i := 1; i < len(pathSegments); i++ {
-		var packId, _ = strconv.Atoi(pathSegments[i])
+		var packId, _ = strconv.ParseInt(pathSegments[i], 10, 64)
 		pack = model.Packs.GetByParent(pack.Id(), packId)
 		if pack == nil {
 			break
@@ -169,7 +216,7 @@ func (this packs) GetByPath(path string) *Pack {
 	return pack
 }
 
-func (this packs) GetByParent(parentId int, id int) *Pack {
+func (this packs) GetByParent(parentId int64, id int64) *Pack {
 	fmt.Println("packs: GetByParent parentId=", parentId, " id=", id)
 
 	rows, err := db.driver.Query("select * from pack where id=? AND parent=?", id, parentId)
@@ -184,6 +231,22 @@ func (this packs) GetByParent(parentId int, id int) *Pack {
 	}
 	return nil
 
+}
+
+func (this packs) GetById(id int64) *Pack {
+	fmt.Println("packs: Get id=", id)
+
+	rows, err := db.driver.Query("select * from pack where id=?", id)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		return LoadPack(rows)
+	}
+	return nil
 }
 
 /* if user in self.allowedUsers.all():
