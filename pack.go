@@ -108,10 +108,6 @@ func (this Pack) IsSharedToUser(user *User) bool {
 
 }
 
-
-
-
-
 func (this *Pack) GetFiles() []*File {
 
 	rows, err := db.driver.Query("SELECT id, name, creationDate, size, uploadedSize, sha, uploadState, file.file, owner, description, mime, autoMime FROM pack_file, file WHERE pack=?", this.id)

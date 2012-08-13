@@ -46,6 +46,8 @@ func (this Database) createDatabase() {
 	this.execQuery("CREATE TABLE pack (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, creationDate DATETIME, owner INTEGER, parentPack INTEGER, isPublic BOOL);")
 	this.execQuery("CREATE TABLE pack_file (pack INTEGER , file INTEGER);")
 
+	this.execQuery("CREATE TABLE part (id INTEGER PRIMARY KEY AUTOINCREMENT, file INTEGER,  offset INTEGER, size INTEGER);")
+
 }
 
 func GetModel() Model {

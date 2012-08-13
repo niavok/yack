@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+	"io"
 )
 
 const (
@@ -15,8 +16,8 @@ type File struct {
 	id           int64
 	name         string
 	creationDate time.Time
-	size         int
-	uploadedSize int
+	size         int64
+	uploadedSize int64
 	sha          string
 	uploadState  string
 	file         string
@@ -71,7 +72,7 @@ func (this *File) Name() string {
 	return this.name
 }
 
-func (this *File) Size() int {
+func (this *File) Size() int64 {
 	return this.size
 }
 
@@ -119,13 +120,36 @@ func (this *File) Parts() []*Part {
 		return nil
 	}
 	defer rows.Close()
+	
+	parts := []*Part{}
+	
 	for rows.Next() {
-		LoadPart(rows)
+        parts = append(parts, LoadPart(rows))
 	}
-	rows.Close()
 
-	return nil
+	return parts
 }
+
+func (this *File) AddData(offset int64 , size int64, sha string, data io.ReadCloser) {
+    // Create physical file if needed
+    if this.file == "" {
+        
+    }
+
+    // Check existing parts
+    
+    
+    //Write data
+    
+
+    // Check sha
+
+    // Update parts
+    
+    // Update state
+}
+
+
 
 /////////////////
 // Files list
