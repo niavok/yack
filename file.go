@@ -82,6 +82,11 @@ func (this *File) Sha() string {
 	return this.sha
 }
 
+func (this *File) Path() string {
+	return this.file
+}
+
+
 func (this *File) Owner() *User {
     if this.owner == nil {
         this.owner = model.Users.GetById(this.ownerId)
@@ -105,10 +110,16 @@ func (this *File) CanRead(user *User) bool {
 	return false
 }
 
+func (this *File) UploadState() string {
+    return this.uploadState
+}
 
 func (this *File) Progress() float64 {
 	if this.uploadState == UPLOADED {
 		return 1
+	}
+	if this.size == 0 {
+	    return 1
 	}
 
 	return float64(this.uploadedSize) / float64(this.size)

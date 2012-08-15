@@ -110,7 +110,7 @@ func (this *Pack) IsSharedToUser(user *User) bool {
 
 func (this *Pack) GetFiles() []*File {
 
-	rows, err := db.driver.Query("SELECT id, name, creationDate, size, uploadedSize, sha, uploadState, file.file, owner, description, mime, autoMime FROM pack_file, file WHERE pack=?", this.id)
+	rows, err := db.driver.Query("SELECT id, name, creationDate, size, uploadedSize, sha, uploadState, file.file, owner, description, mime, autoMime FROM pack_file, file WHERE pack=? AND pack_file.file=file.id", this.id)
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -169,6 +169,14 @@ func (this *Pack) SetOwner(user *User) {
 	this.ownerId = user.Id()
     this.owner = user
 }
+
+func (this *Pack) AddFile(file *File) {
+    _, err := db.driver.Exec("INSERT INTO pack_file ('pack', 'file') values(?, ?);", this.Id(), file.Id())
+	if err != nil {
+		fmt.Println("Error in AddFile: ",err)
+	}
+}
+
 
 ///////////////////////
 // Pack list
