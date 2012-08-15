@@ -16,6 +16,7 @@ type Model struct {
 	Users users
 	Packs packs
 	Files files
+	Parts parts
 }
 
 var model Model

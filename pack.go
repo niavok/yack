@@ -74,7 +74,7 @@ func (this *Pack) CanRead(user *User) bool {
 	return this.isPublic
 }
 
-func (this Pack) IsSharedToUser(user *User) bool {
+func (this *Pack) IsSharedToUser(user *User) bool {
 	fmt.Println("packs: IsSharedToUser user=", user.DisplayName())
 
 	// Is shared to this user
@@ -126,7 +126,7 @@ func (this *Pack) GetFiles() []*File {
 	return files
 }
 
-func (this Pack) IsSharedToUserGroup(group *UserGroup) bool {
+func (this *Pack) IsSharedToUserGroup(group *UserGroup) bool {
 	fmt.Println("packs: IsSharedToUserGroup group=", group.Name())
 
 	// Is shared to this user
@@ -160,7 +160,7 @@ func (this Pack) IsSharedToUserGroup(group *UserGroup) bool {
 
 }
 
-func (this Pack) SetOwner(user *User) {
+func (this *Pack) SetOwner(user *User) {
     _, err := db.driver.Exec("UPDATE pack SET owner=? WHERE id=?", user.Id(), this.Id())
 	if err != nil {
 		fmt.Println("Error in SetOwner: ",err)
